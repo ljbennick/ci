@@ -10,7 +10,7 @@ jobs:
           password: $DOCKERHUB_PASSWORD # context / project UI env-var reference
     steps:
       - checkout
-      - run: echo "this is the build job"
+      - run: my-build-commands
   test:
     docker:
       - image: circleci/<language>:<version TAG>
@@ -19,11 +19,30 @@ jobs:
           password: $DOCKERHUB_PASSWORD # context / project UI env-var reference
     steps:
       - checkout
-      - run: echo "this is the test job"
+      - run: my-test-commands
+  deploy:
+    docker:
+      - image: circleci/<language>:<version TAG>
+        auth:
+          username: mydockerhub-user
+          password: $DOCKERHUB_PASSWORD # context / project UI env-var reference
+    steps:
+      - checkout
+      - run: my-deploy-commands
 
 # Orchestrate our job run sequence
 workflows:
   build_and_test:
     jobs:
       - build
-      - test
+      - test:
+          requires:
+            - build
+      - hold:
+          type: approval
+          requires:
+            - build
+            - test
+      - deploy:
+          requires:
+            - hold
